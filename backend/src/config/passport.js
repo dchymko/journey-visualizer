@@ -29,8 +29,8 @@ passport.use('kit', new OAuth2Strategy({
     tokenURL: process.env.OAUTH_TOKEN_URL,
     clientID: process.env.KIT_CLIENT_ID,
     clientSecret: process.env.KIT_CLIENT_SECRET,
-    callbackURL: process.env.KIT_REDIRECT_URI,
-    scope: ['subscribers:read', 'tags:read', 'sequences:read', 'automation_rules:read']
+    callbackURL: process.env.KIT_REDIRECT_URI
+    // Note: Kit may not require explicit scopes, or they may be configured in the Kit app settings
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
@@ -44,7 +44,19 @@ passport.use('kit', new OAuth2Strategy({
         }
       });
 
-      const kitAccount = response.data;
+      const kitResponse = response.data;
+      const kitAccount = kitResponse.account || kitResponse;
+
+      // Extract account ID - Kit returns it nested under 'account'
+      const accountId = kitAccount.id ||
+                       kitAccount.account_id ||
+                       kitAccount.primary_email_address ||
+                       kitAccount.email;
+
+      if (!accountId) {
+        logger.error('Could not find account ID in Kit response');
+        throw new Error('Kit API did not return a valid account identifier');
+      }
 
       // Calculate token expiration (Kit tokens typically last 2 hours)
       const tokenExpiresAt = new Date(Date.now() + (2 * 60 * 60 * 1000));
@@ -52,7 +64,7 @@ passport.use('kit', new OAuth2Strategy({
       // Check if account exists
       const existingAccount = await db.query(
         'SELECT * FROM accounts WHERE kit_account_id = $1',
-        [kitAccount.id || kitAccount.account_id]
+        [accountId]
       );
 
       let account;
@@ -72,9 +84,9 @@ passport.use('kit', new OAuth2Strategy({
             accessToken,
             refreshToken,
             tokenExpiresAt,
-            kitAccount.email || kitAccount.primary_email_address,
-            kitAccount.name,
-            kitAccount.id || kitAccount.account_id
+            kitAccount.email || kitAccount.primary_email_address || accountId,
+            kitAccount.name || 'Kit User',
+            accountId
           ]
         );
         account = updateResult.rows[0];
@@ -92,9 +104,9 @@ passport.use('kit', new OAuth2Strategy({
           ) VALUES ($1, $2, $3, $4, $5, $6)
           RETURNING *`,
           [
-            kitAccount.id || kitAccount.account_id,
-            kitAccount.email || kitAccount.primary_email_address,
-            kitAccount.name,
+            accountId,
+            kitAccount.email || kitAccount.primary_email_address || accountId,
+            kitAccount.name || 'Kit User',
             accessToken,
             refreshToken,
             tokenExpiresAt

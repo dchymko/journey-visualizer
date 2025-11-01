@@ -51,15 +51,18 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Session configuration
+// When using ngrok or other HTTPS tunnels, we need secure cookies
+const isHttps = process.env.API_BASE_URL?.startsWith('https') || process.env.NODE_ENV === 'production';
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    sameSite: isHttps ? 'none' : 'lax'
   }
 }));
 
