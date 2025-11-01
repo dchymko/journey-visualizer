@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+// Use relative URLs in development to leverage Vite proxy
+// In production, set VITE_API_BASE_URL to your backend URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,8 +31,9 @@ api.interceptors.response.use(
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
 
-    if (error.response?.status === 401) {
-      // Redirect to login if unauthorized
+    // Only redirect on 401 for protected API calls, not auth checks
+    if (error.response?.status === 401 && !error.config.url.includes('/auth/me')) {
+      // Redirect to login if unauthorized on protected routes
       window.location.href = '/';
     }
 
@@ -43,7 +46,8 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
   initiateOAuth: () => {
-    window.location.href = `${API_BASE_URL}/auth/kit`;
+    // For OAuth, we can use a relative URL since it's a page redirect
+    window.location.href = '/auth/kit';
   },
 };
 
