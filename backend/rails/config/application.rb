@@ -30,9 +30,8 @@ module KitJourneyVisualizer
     config.time_zone = 'UTC'
     config.active_record.default_timezone = :utc
 
-    # Autoload lib directory
-    config.autoload_paths << Rails.root.join('lib')
-    config.eager_load_paths << Rails.root.join('lib')
+    # Don't autoload lib directory (we manually require what we need)
+    # This avoids Zeitwerk issues with custom naming conventions
 
     # CORS will be configured in initializer
 

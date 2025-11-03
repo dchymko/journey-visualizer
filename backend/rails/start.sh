@@ -8,4 +8,4 @@ fi
 
 # Start Rails server
 echo "🚀 Starting Rails server on port ${PORT:-3001}..."
-bundle exec rails server -p ${PORT:-3001}
+bundle exec rails server -p ${PORT:-3001} -b 0.0.0.0

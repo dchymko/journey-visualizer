@@ -1,4 +1,5 @@
-require 'omniauth-kit'
+# Load custom Kit OAuth strategy
+require_relative '../../lib/omniauth_kit'
 
 Rails.application.config.middleware.use OmniAuth::Builder do
   provider :kit,
