@@ -5,6 +5,7 @@
 
 # Dependencies
 /vendor/bundle
+/.bundle
 
 # Ignore bundler config.
 /.bundle
